@@ -1,0 +1,45 @@
+
+<html>
+<head>
+    <title>login</title>
+    <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+</head>
+<body>
+<form id="signup">
+	<h1>Sign Up</h1>
+	<div class="field">
+		<label for="username">Name:</label>
+		<input type="text" value='johndoe' id="username" name="username" placeholder="Enter your fullname" />
+		<small></small>
+	</div>
+	<div class="field">
+		<label for="password">Senha:</label>
+		<input type="password" value='password' id="password" name="password" placeholder="Enter your email address" />
+		<small></small>
+	</div>
+	
+</form>
+<button id="submit" name="submit" type="submit" value="Submit" onclick="login()">Login</button>
+
+</body>
+<script>
+const form = document.getElementById('signup')
+function login(){
+fetch('/token', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/x-www-form-urlencoded'
+  },
+  body: new URLSearchParams({
+    'username': form.elements['username'].value,
+    'password': form.elements['password'].value,
+    'scope': 'me',
+  })
+}).then((res) => res.json()).then(data => {
+  localStorage.setItem("access_token", data.access_token)
+});
+
+}
+
+</script>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Tokens</title>
+    </head>
+    <body>
+        <h1>WebSocket QR Code</h1>
+        <img id = 'qrcode' alt="Red dot" />
+        <script>
+            var ws = new WebSocket("ws://localhost:8000/ws");
+            ws.onmessage = function(event) {
+                var oImg = document.getElementById('qrcode');
+                oImg.setAttribute('src', "data:image/png;base64,"+event.data);
+            };
+        </script>
+    </body>
+</html>
