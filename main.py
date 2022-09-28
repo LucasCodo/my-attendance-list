@@ -15,7 +15,7 @@ from temporary_token import Token as TToken
 from websocket_manager import *
 
 
-class Aluno(BaseModel):
+class Student(BaseModel):
     name: str
     cod: str
     token: str
@@ -55,7 +55,7 @@ async def get(request: Request):
     return templates.TemplateResponse("token.html", {"request": request})
 
 
-@app.get("/temporary-token/secunds={id}")
+@app.get("/temporary-token/seconds={id}")
 async def get_token(id: int):
     token = TToken(seconds=id)
     tokens.update(token)
@@ -63,10 +63,10 @@ async def get_token(id: int):
 
 
 @app.post("/validar")
-async def validar(aluno: Aluno):
-    token = tokens.get(aluno.token, TToken(alive=False))
+async def validar(student: Student):
+    token = tokens.get(student.token, TToken(alive=False))
     if token.is_valid():
-        tokens.pop(aluno.token)
+        tokens.pop(student.token)
         return "Operação realizada com sucesso"
     return "Token invalido"
 
