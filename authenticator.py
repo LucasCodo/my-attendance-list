@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
 from typing import List, Union
 
-from fastapi import Depends, FastAPI, HTTPException, Security, status, Request
+from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import (
     OAuth2PasswordBearer,
-    OAuth2PasswordRequestForm,
     SecurityScopes,
 )
 from jose import JWTError, jwt
@@ -16,7 +15,6 @@ from pydantic import BaseModel, ValidationError
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
 
 fake_users_db = {
     "johndoe": {
@@ -34,6 +32,7 @@ fake_users_db = {
         "disabled": True,
     },
 }
+
 
 class Token(BaseModel):
     access_token: str
@@ -62,8 +61,6 @@ oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="token",
     scopes={"me": "Read information about the current user.", "items": "Read items."},
 )
-
-#app = FastAPI()
 
 
 def verify_password(plain_password, hashed_password):
@@ -101,7 +98,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 
 
 async def get_current_user(
-    security_scopes: SecurityScopes, token: str = Depends(oauth2_scheme)
+        security_scopes: SecurityScopes, token: str = Depends(oauth2_scheme)
 ):
     if security_scopes.scopes:
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
@@ -135,9 +132,8 @@ async def get_current_user(
 
 
 async def get_current_active_user(
-    current_user: User = Security(get_current_user, scopes=["me"])
+        current_user: User = Security(get_current_user, scopes=["me"])
 ):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
-

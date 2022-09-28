@@ -2,6 +2,7 @@ import threading
 import schedule
 import time
 
+
 def run_continuously(interval=1):
     """Continuously run, while executing pending jobs at each
     elapsed time interval.
@@ -26,14 +27,14 @@ def run_continuously(interval=1):
     continuous_thread.start()
     return cease_continuous_run
 
-def clean_invalid_tokens(tokens:dict):
+
+def clean_invalid_tokens(tokens: dict):
     alive = {}
     for token in tokens.values():
         if token.is_valid():
             alive.update(token)
     tokens.clear()
     tokens.update(alive)
-
 
 
 stop_run_continuously = run_continuously()
