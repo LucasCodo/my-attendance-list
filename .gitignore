@@ -3,3 +3,4 @@ trash/
 .idea/
 venv/
 *.pyc
+/my-attendance-list.iml

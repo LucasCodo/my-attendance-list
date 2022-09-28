@@ -13,6 +13,8 @@ from backgroundtasks import clean_invalid_tokens as cit
 from backgroundtasks import stop_run_continuously
 from temporary_token import Token as TToken
 from websocket_manager import *
+import os
+print(os.environ["teste"])
 
 
 class Student(BaseModel):
