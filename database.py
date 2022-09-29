@@ -1,5 +1,14 @@
 from peewee import *
+from datetime import datetime
+from enum import Enum
 import os
+
+
+class LicenseType(Enum):
+    Free = "free"
+    Monthly = "monthly"
+    Yearly = "yearly"
+
 
 db_name = os.getenv("db_name")
 user = os.getenv("db_user")
@@ -20,7 +29,20 @@ class Student(BaseModel):
     name = TextField()
     email = TextField()
     password = TextField()
-    registration_number = TextField()
+    registration_number = TextField(null=True)  # matricula
+
+
+class StudentList(BaseModel):
+    student = ForeignKeyField(Student, backref='Students')
+    description = TextField(null=True)
+    time_stamp = DateTimeField(default=datetime.now)
+
+
+class License(BaseModel):
+    type = TextField(default=LicenseType.Free)
+    start_date = DateTimeField(default=datetime.now)
+    end_date = DateTimeField(null=True)
+    is_active = BooleanField(default=True)
 
 
 class Teacher(BaseModel):
@@ -29,39 +51,47 @@ class Teacher(BaseModel):
     password = TextField()
 
 
+class TeacherList(BaseModel):
+    teacher = ForeignKeyField(Teacher, backref='listTeachers')
+    description = TextField(null=True)
+
+
 class Course(BaseModel):
     name = TextField()
-    students = ManyToManyField(Student, backref='courses')
-    teacher = ForeignKeyField(Teacher, backref='courses')
+    students = ForeignKeyField(StudentList, backref='courses', null=True)
+    teacher = ForeignKeyField(Teacher, backref='courses', null=True)
 
 
-StudentCourse = Course.students.get_through_model()
+class CourseList(BaseModel):
+    course = ForeignKeyField(Course, backref='listCourses')
+    description = TextField(null=True)
 
 
 class Organization(BaseModel):
     name = TextField()
-    teachers = ManyToManyField(Teacher, backref='organizations')
-
-
-TeacherOrganization = Organization.teachers.get_through_model()
+    email = TextField()
+    password = TextField()
+    teachers = ForeignKeyField(TeacherList, backref='organizations', null=True)
+    courses = ForeignKeyField(CourseList, backref='organizations', null=True)
 
 
 class AttendanceList(BaseModel):
     date = DateTimeField()
-    students = ManyToManyField(Student, backref='attendancelists')
+    studentList = ForeignKeyField(StudentList, backref='AttendanceLists')
+    description = TextField(null=True)
 
-
-StudentAttendanceList = AttendanceList.students.get_through_model()
 
 pg_db.create_tables([Student,
-                     Course,
+                     StudentList,
+                     License,
                      Teacher,
+                     TeacherList,
+                     Course,
+                     CourseList,
                      Organization,
-                     AttendanceList,
-                     StudentCourse,
-                     TeacherOrganization,
-                     StudentAttendanceList])
+                     AttendanceList])
 
+"""
 data = [
     {'name': 'lucas', 'email': 'lucas@email.com', 'password': 'senha',
      'registration_number': '123'},
@@ -117,3 +147,4 @@ query = (Student
          .where(Course.name == 'Curso X'))
 for student in query:
     print(student.name)
+"""
