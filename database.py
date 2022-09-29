@@ -1,7 +1,14 @@
 from peewee import *
+import os
 
-pg_db = PostgresqlDatabase('testepeewee', user='postgres', password='Guitar123*',
-                           host='127.0.0.1', port=5433)
+db_name = os.getenv("db_name")
+user = os.getenv("db_user")
+password = os.getenv("db_password")
+host = os.getenv("db_host")
+port = int(os.getenv("db_port"))
+
+pg_db = PostgresqlDatabase(db_name, user=user, password=password,
+                           host=host, port=port)
 
 
 class BaseModel(Model):
