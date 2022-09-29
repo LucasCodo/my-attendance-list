@@ -71,11 +71,6 @@ async def validar(student: Student):
     return "Token invalido"
 
 
-@app.get("/turma/{turma_id}")
-async def read_item(turma_id):
-    return {"turma_id": turma_id}
-
-
 @app.get("/login", response_class=HTMLResponse)
 async def read_item(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -123,3 +118,64 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         print(e)
         manager.disconnect(websocket)
+
+
+# endpoints of the student
+
+@app.get("/student/profile")
+async def profile_teacher(current_user: User = Depends(get_current_user)):
+    return "perfil do aluno "+current_user.username
+
+
+@app.get("/student/dashboard")
+async def teacher(current_user: User = Depends(get_current_user)):
+    return "Dashboard do aluno "+current_user.username
+
+
+@app.get("/student/attendance-list/")
+async def student_attendance_list(token: str, current_user: User = Depends(get_current_user)):
+    return "Dashboard do aluno "+current_user.username
+
+
+# endpoints of the teacher
+
+@app.get("/teacher/profile")
+async def profile_teacher(current_user: User = Depends(get_current_user)):
+    return "perfil do professor"
+
+
+@app.get("/teacher/dashboard")
+async def teacher(current_user: User = Depends(get_current_user)):
+    return "Dashboard do professor "+current_user.username
+
+
+@app.get("/teacher/courses/")
+async def teacher_courses(current_user: User = Depends(get_current_user)):
+    return "Tela de gerencia de cursos do professor "+current_user.username
+
+
+@app.get("/teacher/attendance-lists/")
+async def attendance_lists(current_user: User = Depends(get_current_user)):
+    return "Tela de gerencia das listas de frequencia do professor "+current_user.username
+
+# endpoints of the Organization
+
+
+@app.get("/organization/dashboard")
+async def dashboard_organization(current_user: User = Depends(get_current_user)):
+    return "Dashboard da organização "+current_user.username
+
+
+@app.get("/organization/profile")
+async def organization_profile(current_user: User = Depends(get_current_user)):
+    return "Perfil da organização "+current_user.username
+
+
+@app.get("/organization/dashboard/teachers/")
+async def dashboard_organization_teachers(current_user: User = Depends(get_current_user)):
+    return "Tela de gerencia de professores da organização "+current_user.username
+
+
+@app.get("/organization/dashboard/courses/")
+async def dashboard_organization_courses(current_user: User = Depends(get_current_user)):
+    return "Tela de gerencia de cursos da organização "+current_user.username

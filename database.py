@@ -98,7 +98,8 @@ pg_db.create_tables([Student,
                      CourseList,
                      Organization,
                      AttendanceList])
-
+# TO DO
+# Padronizar as querys de select, insert, update e delete
 """
 data = [
     {'name': 'lucas', 'email': 'lucas@email.com', 'password': 'senha',
