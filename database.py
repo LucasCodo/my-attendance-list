@@ -10,6 +10,12 @@ class LicenseType(Enum):
     Yearly = "yearly"
 
 
+class TransactionType(Enum):
+    Bitcoin = "bitcoin"
+    Lightning = "lightning"
+    CreditCard = "credit"
+
+
 db_name = os.getenv("db_name")
 user = os.getenv("db_user")
 password = os.getenv("db_password")
@@ -43,6 +49,8 @@ class License(BaseModel):
     start_date = DateTimeField(default=datetime.now)
     end_date = DateTimeField(null=True)
     is_active = BooleanField(default=True)
+    transaction_type = TextField(default=TransactionType.CreditCard)
+    transaction_id = TextField()
 
 
 class Teacher(BaseModel):
