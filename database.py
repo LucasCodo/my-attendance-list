@@ -27,133 +27,158 @@ pg_db = PostgresqlDatabase(db_name, user=user, password=password,
 
 
 class BaseModel(Model):
+    time_stamp = DateTimeField(default=datetime.now, null=True)
+
     class Meta:
         database = pg_db
 
 
-class Student(BaseModel):
+class UserModel(BaseModel):
     name = TextField()
-    email = TextField()
+    email = TextField(unique=True)
     password = TextField()
-    registration_number = TextField(null=True)  # matricula
 
 
-class StudentList(BaseModel):
-    student = ForeignKeyField(Student, backref='Students')
-    description = TextField(null=True)
-    time_stamp = DateTimeField(default=datetime.now)
-
-
-class License(BaseModel):
+class License(BaseModel):  # Licença de uso do Serviço
     type = TextField(default=LicenseType.Free)
     start_date = DateTimeField(default=datetime.now)
     end_date = DateTimeField(null=True)
     is_active = BooleanField(default=True)
-    transaction_type = TextField(default=TransactionType.CreditCard)
-    transaction_id = TextField()
+    payment_method = TextField(default=TransactionType.Lightning)
+    payment_id = TextField()
 
 
-class Teacher(BaseModel):
+class Student(UserModel):  # Estudante
+    registration_code = TextField(null=True)  # matricula
+
+
+class Teacher(UserModel):  # Professor
+    pass
+
+
+class Organization(UserModel):  # Organização, Escola | Universidade
+    pass
+
+
+class Course(BaseModel):  # Curso | Disciplina
     name = TextField()
-    email = TextField()
-    password = TextField()
-
-
-class TeacherList(BaseModel):
-    teacher = ForeignKeyField(Teacher, backref='listTeachers')
-    description = TextField(null=True)
-
-
-class Course(BaseModel):
-    name = TextField()
-    students = ForeignKeyField(StudentList, backref='courses', null=True)
     teacher = ForeignKeyField(Teacher, backref='courses', null=True)
-
-
-class CourseList(BaseModel):
-    course = ForeignKeyField(Course, backref='listCourses')
     description = TextField(null=True)
 
 
-class Organization(BaseModel):
-    name = TextField()
-    email = TextField()
-    password = TextField()
-    teachers = ForeignKeyField(TeacherList, backref='organizations', null=True)
-    courses = ForeignKeyField(CourseList, backref='organizations', null=True)
-
-
-class AttendanceList(BaseModel):
+class AttendanceList(BaseModel):  # Lista de Prensença
     date = DateTimeField()
-    studentList = ForeignKeyField(StudentList, backref='AttendanceLists')
-    description = TextField(null=True)
+    comment = TextField(null=True)
 
 
-pg_db.create_tables([Student,
-                     StudentList,
-                     License,
+class LinkCoursesStudents(BaseModel):  # Ligação de Cursos com Estudantes
+    course = ForeignKeyField(Course, backref='linkCoursesStudents')
+    student = ForeignKeyField(Student, backref='linkCoursesStudents')
+
+
+class LinkStudentsOrganizations(BaseModel):  # Ligação de Estudantes com Organizações
+    student = ForeignKeyField(Student, backref='linkStudentsOrganizations')
+    organization = ForeignKeyField(Organization, backref='linkStudentsOrganizations')
+
+
+class LinkCoursesOrganizations(BaseModel):  # Ligação de Cursos com Organizações
+    course = ForeignKeyField(Course, backref='linkCoursesOrganizations')
+    organization = ForeignKeyField(Organization, backref='linkCoursesOrganizations')
+
+
+class LinkTeachersOrganizations(BaseModel):  # Ligação de Professores com Organizações
+    teacher = ForeignKeyField(Teacher, backref='linkTeachersOrganizations')
+    organization = ForeignKeyField(Organization, backref='linkTeachersOrganizations')
+
+
+class LinkStudentsAttendanceLists(BaseModel):  # Ligação de Estudantes com Listas de Presença
+    student = ForeignKeyField(Student, backref='linkStudentsAttendanceLists')
+    attendanceList = ForeignKeyField(AttendanceList, backref='linkStudentsAttendanceLists')
+    comment = TextField(null=True)
+
+
+class LinkLicensesTeachers(BaseModel):  # Ligação das Licenças dos Professores
+    teacher = ForeignKeyField(Teacher, backref='linkLicensesTeachers')
+    license = ForeignKeyField(License, backref='linkLicensesTeachers')
+
+
+class LinkLicensesOrganizations(BaseModel):  # Ligação das Licenças das Organizações
+    organization = ForeignKeyField(Organization, backref='linkLicensesOrganizations')
+    license = ForeignKeyField(License, backref='linkLicensesOrganizations')
+
+
+pg_db.create_tables([License,
+                     Student,
                      Teacher,
-                     TeacherList,
-                     Course,
-                     CourseList,
                      Organization,
-                     AttendanceList])
+                     Course,
+                     AttendanceList,
+                     LinkCoursesStudents,
+                     LinkCoursesOrganizations,
+                     LinkTeachersOrganizations,
+                     LinkStudentsAttendanceLists,
+                     LinkLicensesTeachers,
+                     LinkLicensesOrganizations])
+
+
 # TO DO
 # Padronizar as querys de select, insert, update e delete
-"""
-data = [
-    {'name': 'lucas', 'email': 'lucas@email.com', 'password': 'senha',
-     'registration_number': '123'},
-    {'name': 'pedro', 'email': 'pedro@email.com', 'password': 'senha',
-     'registration_number': '234'},
-    {'name': 'joão', 'email': 'joao@email.com', 'password': 'senha',
-     'registration_number': '345'},
-    {'name': 'maria', 'email': 'maria@email.com', 'password': 'senha',
-     'registration_number': '456'},
-    {'name': 'paula', 'email': 'paula@email.com', 'password': 'senha',
-     'registration_number': '567'},
-    {'name': 'ana', 'email': 'ana@email.com', 'password': 'senha',
-     'registration_number': '678'}
-]
-with pg_db.atomic():
-    query = Student.insert_many(data)
-    query.execute()
 
-data = [
-    {'name': 'raimundo', 'email': 'raimundo@email.com', 'password': 'senha'},
-    {'name': 'juliana', 'email': 'juliana@email.com', 'password': 'senha'},
-    {'name': 'romulo', 'email': 'romulo@email.com', 'password': 'senha'}
-]
-with pg_db.atomic():
-    query = Teacher.insert_many(data)
-    query.execute()
 
-data = [
-    {'name': 'Curso X', 'teacher': 1},
-    {'name': 'Disciplina Y', 'teacher': 2},
-    {'name': 'Materia Z', 'teacher': 3}
-]
-with pg_db.atomic():
-    query = Course.insert_many(data)
-    query.execute()
+def insert_many_on_table(db, table: BaseModel, data: dict):
+    with db.atomic():
+        query = table.insert_many(data)
+        query.execute()
 
-data = [
-    {'course_id': 1, 'student_id': 1},
-    {'course_id': 1, 'student_id': 2},
-    {'course_id': 1, 'student_id': 3},
-    {'course_id': 2, 'student_id': 4},
-    {'course_id': 2, 'student_id': 5},
-    {'course_id': 3, 'student_id': 6},
-]
-with pg_db.atomic():
-    query = StudentCourse.insert_many(data)
-    query.execute()
 
-query = (Student
-         .select()
-         .join(StudentCourse)
-         .join(Course)
-         .where(Course.name == 'Curso X'))
-for student in query:
-    print(student.name)
-"""
+def select_students():
+    query = Student.select()
+    for student in query:
+        print(student.name)
+
+
+def select_attendance_list_by_id(list_id: int):
+    query = (LinkStudentsAttendanceLists
+             .select()
+             .where(LinkStudentsAttendanceLists.attendanceList == list_id))
+    for attendanceList in query:
+        print(attendanceList.attendanceList.id,
+              attendanceList.student.name,
+              attendanceList.attendanceList.date)
+    return query
+
+
+if __name__ == "__main__":
+    data = [
+        {'name': 'lucas', 'email': 'lucas@email.com', 'password': 'password'},
+        {'name': 'pedro', 'email': 'pedro@email.com', 'password': 'password', },
+        {'name': 'joão', 'email': 'joao@email.com', 'password': 'password'},
+        {'name': 'maria', 'email': 'maria@email.com', 'password': 'password'},
+        {'name': 'paula', 'email': 'paula@email.com', 'password': 'password'},
+        {'name': 'ana', 'email': 'ana@email.com', 'password': 'password'}
+    ]
+    # insert_many_on_table(pg_db, Student, data)
+
+    data = [
+        {'date': datetime.today()},
+    ]
+    # insert_many_on_table(pg_db, AttendanceList, data)
+
+    """for i in range(1, 4):
+        lsa = LinkStudentsAttendanceLists(student=i, attendanceList=1)
+        lsa.save()"""
+
+    select_attendance_list_by_id(1)
+    data = [
+        {'name': 'raimundo', 'email': 'raimundo@email.com', 'password': 'password'},
+        {'name': 'juliana', 'email': 'juliana@email.com', 'password': 'password'},
+        {'name': 'romulo', 'email': 'romulo@email.com', 'password': 'password'}
+    ]
+    # insert_many_on_table(pg_db, Teacher, data)
+
+    data = [
+        {'name': 'UFMA', 'email': 'ufma@ufma.br', 'password': 'password'},
+        {'name': 'EUMA', 'email': 'euma@euma.br', 'password': 'password'},
+        {'name': 'IFMA', 'email': 'ifma@ifma.br', 'password': 'password'}
+    ]
+    # insert_many_on_table(pg_db, Organization, data)
