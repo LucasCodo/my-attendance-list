@@ -2,6 +2,7 @@ from peewee import *
 from datetime import datetime
 from enum import Enum
 import os
+from typing import List
 
 
 class LicenseType(Enum):
@@ -114,6 +115,7 @@ pg_db.create_tables([License,
                      Course,
                      AttendanceList,
                      LinkCoursesStudents,
+                     LinkStudentsOrganizations,
                      LinkCoursesOrganizations,
                      LinkTeachersOrganizations,
                      LinkStudentsAttendanceLists,
@@ -125,7 +127,7 @@ pg_db.create_tables([License,
 # Padronizar as querys de select, insert, update e delete
 
 
-def insert_many_on_table(db, table: BaseModel, data: dict):
+def insert_many_on_table(db, table: BaseModel, data: List[dict]):
     with db.atomic():
         query = table.insert_many(data)
         query.execute()
@@ -145,40 +147,88 @@ def select_attendance_list_by_id(list_id: int):
         print(attendanceList.attendanceList.id,
               attendanceList.student.name,
               attendanceList.attendanceList.date)
-    return query
+    return list(query)
+
+
+def select_licenses_of_teacher(teacher_id: int):
+    query = (LinkLicensesTeachers
+             .select()
+             .where(LinkLicensesTeachers.teacher == teacher_id))
+    return list((row.license for row in query))
+
+
+def select_teachers_of_organization(organization_id):
+    query = (LinkTeachersOrganizations
+             .select()
+             .where(LinkTeachersOrganizations.organization == organization_id))
+    return list((row.teacher for row in query))
 
 
 if __name__ == "__main__":
-    data = [
-        {'name': 'lucas', 'email': 'lucas@email.com', 'password': 'password'},
-        {'name': 'pedro', 'email': 'pedro@email.com', 'password': 'password', },
-        {'name': 'joão', 'email': 'joao@email.com', 'password': 'password'},
-        {'name': 'maria', 'email': 'maria@email.com', 'password': 'password'},
-        {'name': 'paula', 'email': 'paula@email.com', 'password': 'password'},
-        {'name': 'ana', 'email': 'ana@email.com', 'password': 'password'}
-    ]
-    # insert_many_on_table(pg_db, Student, data)
+    if str(input('Insert com dados de teste(yes or not)? ')) in ['y', 'yes']:
+        data = [
+            {'name': 'lucas', 'email': 'lucas@email.com', 'password': 'password'},
+            {'name': 'pedro', 'email': 'pedro@email.com', 'password': 'password', },
+            {'name': 'joão', 'email': 'joao@email.com', 'password': 'password'},
+            {'name': 'maria', 'email': 'maria@email.com', 'password': 'password'},
+            {'name': 'paula', 'email': 'paula@email.com', 'password': 'password'},
+            {'name': 'ana', 'email': 'ana@email.com', 'password': 'password'}
+        ]
+        insert_many_on_table(pg_db, Student, data)
 
-    data = [
-        {'date': datetime.today()},
-    ]
-    # insert_many_on_table(pg_db, AttendanceList, data)
+        data = [
+            {'date': datetime.today()},
+        ]
+        insert_many_on_table(pg_db, AttendanceList, data)
 
-    """for i in range(1, 4):
-        lsa = LinkStudentsAttendanceLists(student=i, attendanceList=1)
-        lsa.save()"""
+        data = [
+            {'name': 'raimundo', 'email': 'raimundo@email.com', 'password': 'password'},
+            {'name': 'juliana', 'email': 'juliana@email.com', 'password': 'password'},
+            {'name': 'romulo', 'email': 'romulo@email.com', 'password': 'password'}
+        ]
+        insert_many_on_table(pg_db, Teacher, data)
 
-    select_attendance_list_by_id(1)
-    data = [
-        {'name': 'raimundo', 'email': 'raimundo@email.com', 'password': 'password'},
-        {'name': 'juliana', 'email': 'juliana@email.com', 'password': 'password'},
-        {'name': 'romulo', 'email': 'romulo@email.com', 'password': 'password'}
-    ]
-    # insert_many_on_table(pg_db, Teacher, data)
+        data = [
+            {'name': 'UFMA', 'email': 'ufma@ufma.br', 'password': 'password'},
+            {'name': 'EUMA', 'email': 'euma@euma.br', 'password': 'password'},
+            {'name': 'IFMA', 'email': 'ifma@ifma.br', 'password': 'password'}
+        ]
+        insert_many_on_table(pg_db, Organization, data)
 
-    data = [
-        {'name': 'UFMA', 'email': 'ufma@ufma.br', 'password': 'password'},
-        {'name': 'EUMA', 'email': 'euma@euma.br', 'password': 'password'},
-        {'name': 'IFMA', 'email': 'ifma@ifma.br', 'password': 'password'}
-    ]
-    # insert_many_on_table(pg_db, Organization, data)
+        data = [
+            {'payment_id': 'invoice'}
+        ]
+        insert_many_on_table(pg_db, License, data)
+
+        data = [
+            {'name': 'python basic', 'teacher_id': 1}
+        ]
+        insert_many_on_table(pg_db, Course, data)
+
+        for i in range(1, 4):
+            table = LinkCoursesStudents(student=i, course=1)
+            table.save()
+        for i in range(1, 3):
+            table = LinkCoursesOrganizations(organization=i, course=1)
+            table.save()
+        for i in range(1, 3):
+            table = LinkTeachersOrganizations(organization=1, teacher=i)
+            table.save()
+        for i in range(1, 4):
+            table = LinkStudentsAttendanceLists(student=i, attendanceList=1)
+            table.save()
+        for i in range(1, 4):
+            table = LinkStudentsOrganizations(organization=2, student=i)
+            table.save()
+        for i in range(1, 3):
+            table = LinkLicensesTeachers(teacher=i, license=1)
+            table.save()
+        for i in range(2, 4):
+            table = LinkLicensesOrganizations(organization=i, license=1)
+            table.save()
+
+    print(select_attendance_list_by_id(1))
+    for i in range(1, 4):
+        print(select_licenses_of_teacher(i))
+
+    print(select_teachers_of_organization(1))
