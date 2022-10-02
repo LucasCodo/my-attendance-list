@@ -3,7 +3,7 @@ A API que gerencia listas de frequencia
 
 # Pre-requisitos:
   - Python >= 3.8
-  - Libs do requiriments.txt
+  - Libs do requiriments.txt, instale com o comando: 'pip install -r requiriments.txt'
   - Banco de dados PostgreSQL
   - As variaveis de ambiente configuradas:
   'db_password',
