@@ -35,9 +35,11 @@ class BaseModel(Model):
 
 
 class UserModel(BaseModel):
-    name = TextField()
+    username = TextField(unique=True)
+    full_name = TextField()
     email = TextField(unique=True)
-    password = TextField()
+    hashed_password = TextField()
+    disabled = BooleanField(default=False, null=True)
 
 
 class License(BaseModel):  # Licença de uso do Serviço
@@ -136,7 +138,7 @@ def insert_many_on_table(db, table: BaseModel, data: List[dict]):
 def select_students():
     query = Student.select()
     for student in query:
-        print(student.name)
+        print(student.username)
 
 
 def select_attendance_list_by_id(list_id: int):
@@ -145,7 +147,7 @@ def select_attendance_list_by_id(list_id: int):
              .where(LinkStudentsAttendanceLists.attendanceList == list_id))
     for attendanceList in query:
         print(attendanceList.attendanceList.id,
-              attendanceList.student.name,
+              attendanceList.student.username,
               attendanceList.attendanceList.date)
     return list(query)
 
@@ -164,15 +166,66 @@ def select_teachers_of_organization(organization_id):
     return list((row.teacher for row in query))
 
 
+def select_users():
+    query_student = (Student.select())
+    query_teacher = (Teacher.select())
+    query_organization = (Organization.select())
+    users = dict()
+    for user in query_student:
+        users[user.username] = user.__dict__['__data__']
+    for user in query_teacher:
+        users[user.username] = user.__dict__['__data__']
+    for user in query_organization:
+        users[user.username] = user.__dict__['__data__']
+    return users
+
+
+def select_users_by_condition(table_and_condition: List[tuple]):
+    lista = list()
+    for table, condition in table_and_condition:
+        query = table.select().where(condition)
+        lista += list(query)
+    return lista
+
+
+def get_username_by_email(email: str):
+    table_and_condition = [(Student, Student.email == email),
+                           (Teacher, Teacher.email == email),
+                           (Organization, Organization.email == email)]
+    try:
+        user = select_users_by_condition(table_and_condition)[0]
+        return user.username
+    except IndexError:
+        return None
+
+
 if __name__ == "__main__":
     if str(input('Insert com dados de teste(yes or not)? ')) in ['y', 'yes']:
         data = [
-            {'name': 'lucas', 'email': 'lucas@email.com', 'password': 'password'},
-            {'name': 'pedro', 'email': 'pedro@email.com', 'password': 'password', },
-            {'name': 'joão', 'email': 'joao@email.com', 'password': 'password'},
-            {'name': 'maria', 'email': 'maria@email.com', 'password': 'password'},
-            {'name': 'paula', 'email': 'paula@email.com', 'password': 'password'},
-            {'name': 'ana', 'email': 'ana@email.com', 'password': 'password'}
+            {'username': 'lucas',
+             'full_name': 'Lucas Santos',
+             'email': 'lucas@email.com',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'},
+            {'username': 'pedro',
+             'full_name': 'Pedro Alfonço',
+             'email': 'pedro@email.com',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS' },
+            {'username': 'joão',
+             'full_name': 'João Gomes',
+             'email': 'joao@email.com',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'},
+            {'username': 'maria',
+             'full_name': 'Maria de Fatima',
+             'email': 'maria@email.com',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'},
+            {'username': 'paula',
+             'full_name': 'Paula Fernandes',
+             'email': 'paula@email.com',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'},
+            {'username': 'ana',
+             'full_name': 'Ana Cleia',
+             'email': 'ana@email.com',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'}
         ]
         insert_many_on_table(pg_db, Student, data)
 
@@ -182,16 +235,34 @@ if __name__ == "__main__":
         insert_many_on_table(pg_db, AttendanceList, data)
 
         data = [
-            {'name': 'raimundo', 'email': 'raimundo@email.com', 'password': 'password'},
-            {'name': 'juliana', 'email': 'juliana@email.com', 'password': 'password'},
-            {'name': 'romulo', 'email': 'romulo@email.com', 'password': 'password'}
+            {'username': 'raimundo',
+             'full_name': 'Raimundo Nonato',
+             'email': 'raimundo@email.com',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'},
+            {'username': 'juliana',
+             'full_name': 'Juliana de Sousa',
+             'email': 'juliana@email.com',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'},
+            {'username': 'romulo',
+             'full_name': 'Romulo Buzar',
+             'email': 'romulo@email.com',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'}
         ]
         insert_many_on_table(pg_db, Teacher, data)
 
         data = [
-            {'name': 'UFMA', 'email': 'ufma@ufma.br', 'password': 'password'},
-            {'name': 'EUMA', 'email': 'euma@euma.br', 'password': 'password'},
-            {'name': 'IFMA', 'email': 'ifma@ifma.br', 'password': 'password'}
+            {'username': 'UFMA',
+             'full_name': 'Universidade Federal do Maranhão',
+             'email': 'ufma@ufma.br',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'},
+            {'username': 'UEMA',
+             'full_name': 'Universidade Estadual do Maranhão',
+             'email': 'euma@euma.br',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'},
+            {'username': 'IFMA',
+             'full_name': 'Instituto Federal do Maranhão',
+             'email': 'ifma@ifma.br',
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'}
         ]
         insert_many_on_table(pg_db, Organization, data)
 
@@ -227,8 +298,10 @@ if __name__ == "__main__":
             table = LinkLicensesOrganizations(organization=i, license=1)
             table.save()
 
-    print(select_attendance_list_by_id(1))
-    for i in range(1, 4):
-        print(select_licenses_of_teacher(i))
+    #print(select_attendance_list_by_id(1))
+    #for i in range(1, 4):
+    #    print(select_licenses_of_teacher(i))
 
-    print(select_teachers_of_organization(1))
+    #print(select_teachers_of_organization(1))
+    #print(select_users())
+    print(get_username_by_email("lucas@email.com"))
