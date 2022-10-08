@@ -1,24 +1,37 @@
 from asyncio import sleep
-
 import schedule
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, requests
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from peewee import IntegrityError
 
 from authenticator import *
 from backgroundtasks import clean_invalid_tokens as cit
 from backgroundtasks import stop_run_continuously
+from database import insert
+from enumerations import UserType
+from Payment_methods.lightning_payment import *
 from temporary_token import Token as TToken
 from websocket_manager import *
+from fastapi.responses import RedirectResponse
 
 
 class Student(BaseModel):
     name: str
     cod: str
     token: str
+
+
+class UserSignUp(BaseModel):
+    username: str
+    full_name: str
+    email: str
+    password: str
+    usertype: str
+    registration_code: Union[str, None] = None
 
 
 app = FastAPI()
@@ -78,7 +91,7 @@ async def read_item(request: Request):
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(users_db, form_data.username, form_data.password)
+    user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -185,3 +198,50 @@ async def dashboard_organization_teachers(current_user: User = Depends(get_curre
 @app.get("/organization/dashboard/courses/")
 async def dashboard_organization_courses(current_user: User = Depends(get_current_user)):
     return "Tela de gerencia de cursos da organização " + current_user.username
+
+
+# endpoints of the Organization
+@app.get("/buy-license")
+async def buy_license():
+    return "Tela de compra de licença "
+
+
+@app.get('/payment/lightning', response_class=HTMLResponse)
+async def payment_lightning(request: Request):
+    invoice = get_invoice()
+    return templates.TemplateResponse("invoice.html",
+                                      {"request": request,
+                                       "qrcode": invoice_qrcode(invoice),
+                                       "invoice": invoice["payment_request"],
+                                       "invoice_id": invoice["id"]})
+
+
+@app.websocket("/ws/lightning-invoice")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        data = await websocket.receive_text()
+        while True:
+            await manager.send_personal_message(str(been_invoice_paid(data)), websocket)
+            await sleep(3)
+    except Exception as e:
+        manager.disconnect(websocket)
+
+
+# endpoints da api
+
+@app.post("/sign-up/user")
+async def sign_up_user(user: UserSignUp):
+    if user.usertype not in map(lambda x: x.value, list(UserType)):
+        raise HTTPException(status_code=400, detail="Incorrect UserType")
+    data = dict(user)
+    if user.usertype != UserType.Student.value:
+        data.pop("registration_code")
+    data["hashed_password"] = get_password_hash(user.password)
+    data.pop("password")
+    data.pop("usertype")
+    try:
+        insert[user.usertype](data=data)
+    except IntegrityError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return data

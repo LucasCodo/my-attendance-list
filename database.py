@@ -1,21 +1,9 @@
 from peewee import *
 from datetime import datetime
-from enum import Enum
+from enumerations import LicenseType, TransactionType
 import os
 from typing import List
-
-
-class LicenseType(Enum):
-    Free = "free"
-    Monthly = "monthly"
-    Yearly = "yearly"
-
-
-class TransactionType(Enum):
-    Bitcoin = "bitcoin"
-    Lightning = "lightning"
-    CreditCard = "credit"
-
+from functools import partial
 
 db_name = os.getenv("db_name")
 user = os.getenv("db_user")
@@ -43,11 +31,11 @@ class UserModel(BaseModel):
 
 
 class License(BaseModel):  # Licença de uso do Serviço
-    type = TextField(default=LicenseType.Free)
+    type = TextField(default=LicenseType.Free.value)
     start_date = DateTimeField(default=datetime.now)
     end_date = DateTimeField(null=True)
     is_active = BooleanField(default=True)
-    payment_method = TextField(default=TransactionType.Lightning)
+    payment_method = TextField(default=TransactionType.Lightning.value)
     payment_id = TextField()
 
 
@@ -199,6 +187,25 @@ def get_username_by_email(email: str):
         return None
 
 
+def get_user_by_login(login: str):
+    table_and_condition = [(Student, Student.username == login),
+                           (Teacher, Teacher.username == login),
+                           (Organization, Organization.username == login),
+                           (Student, Student.email == login),
+                           (Teacher, Teacher.email == login),
+                           (Organization, Organization.email == login)]
+    try:
+        user = select_users_by_condition(table_and_condition)[0]
+        return {user.username: user.__dict__['__data__']}
+    except IndexError:
+        return []
+
+
+insert = {'student': partial(insert_many_on_table, db=pg_db, table=Student),
+          'teacher': partial(insert_many_on_table, db=pg_db, table=Teacher),
+          'organization': partial(insert_many_on_table, db=pg_db, table=Organization)}
+
+
 if __name__ == "__main__":
     if str(input('Insert com dados de teste(yes or not)? ')) in ['y', 'yes']:
         data = [
@@ -209,7 +216,7 @@ if __name__ == "__main__":
             {'username': 'pedro',
              'full_name': 'Pedro Alfonço',
              'email': 'pedro@email.com',
-             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS' },
+             'hashed_password': '$2b$12$IJwfYdrdxZbjuyJ8ZQsA7.E7bP8dpuf..9UNhgdbQ0rd.ia1RbXtS'},
             {'username': 'joão',
              'full_name': 'João Gomes',
              'email': 'joao@email.com',
@@ -298,10 +305,10 @@ if __name__ == "__main__":
             table = LinkLicensesOrganizations(organization=i, license=1)
             table.save()
 
-    #print(select_attendance_list_by_id(1))
-    #for i in range(1, 4):
+    # print(select_attendance_list_by_id(1))
+    # for i in range(1, 4):
     #    print(select_licenses_of_teacher(i))
 
-    #print(select_teachers_of_organization(1))
-    #print(select_users())
+    # print(select_teachers_of_organization(1))
+    # print(select_users())
     print(get_username_by_email("lucas@email.com"))

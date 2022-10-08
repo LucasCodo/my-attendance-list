@@ -10,7 +10,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, ValidationError
 import os
-from database import select_users, get_username_by_email
+from database import get_user_by_login
 
 # to get a string like this run:
 # openssl rand -hex 32
@@ -34,8 +34,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
         "disabled": True,
     },
 }"""
-
-users_db = select_users()
 
 
 class Token(BaseModel):
@@ -75,18 +73,15 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
+def get_user(login: str):
+    db = get_user_by_login(login)
+    if login in db:
+        user_dict = db[login]
         return UserInDB(**user_dict)
 
 
-def authenticate_user(fake_db, login: str, password: str):
-    query = get_username_by_email(login)
-    if query:
-        user = get_user(fake_db, query)
-    else:
-        user = get_user(fake_db, login)
+def authenticate_user(login: str, password: str):
+    user = get_user(login)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
@@ -126,7 +121,7 @@ async def get_current_user(
         token_data = TokenData(scopes=token_scopes, username=username)
     except (JWTError, ValidationError):
         raise credentials_exception
-    user = get_user(users_db, username=token_data.username)
+    user = get_user(login=token_data.username)
     if user is None:
         raise credentials_exception
     for scope in security_scopes.scopes:

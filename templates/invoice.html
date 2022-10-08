@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice</title>
+</head>
+<body>
+<h1>Invoice</h1>
+<div>
+    <a href="lightning:{{ invoice }}">
+    <img id = 'qrcode' alt="Red dot" src = "data:image/png;base64,{{ qrcode }}" />
+    </a>
+</div>
+
+<p>{{ invoice }}</p>
+<script>
+            var ws = new WebSocket("ws://localhost:8000/ws/lightning-invoice");
+            ws.onmessage = function(event) {
+                if(event.data == "True"){
+                    location.href = '/';
+                }
+            };
+           ws.onopen = function(event) {
+                ws.send('{{ invoice_id }}');
+            };
+        </script>
+</body>
+</html>
